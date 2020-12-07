@@ -1,11 +1,33 @@
-import "./App.css";
-import React, { useLayoutEffect, useRef } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useFilePicker } from "react-sage";
-import { useEffect, useState } from "react";
 import { Stage, Layer, Rect, Image } from "react-konva";
 import useImage from "use-image";
 
-const ColoredRect = ({ height, width, left, top }) => {
+import "./App.css";
+import { IRect } from "konva/types/types";
+
+interface RectType {
+  height: number;
+  width: number;
+  left: number;
+  top: number;
+}
+
+interface ColoredRectProps {
+  height: number;
+  width: number;
+  left: number;
+  top: number;
+}
+
+interface CroppedImageProps {
+  imgSrc: string;
+  height: number;
+  width: number;
+  crop: IRect;
+}
+
+const ColoredRect = ({ height, width, left, top }: ColoredRectProps) => {
   return (
     <Rect
       x={left}
@@ -20,19 +42,10 @@ const ColoredRect = ({ height, width, left, top }) => {
   );
 };
 
-const CroppedImage = ({ imgSrc, width, height, crop, left, top }) => {
+const CroppedImage = ({ imgSrc, width, height, crop }: CroppedImageProps) => {
   const [image] = useImage(imgSrc);
 
-  return (
-    <Image
-      image={image}
-      width={width}
-      height={height}
-      crop={crop}
-      left={left}
-      top={top}
-    />
-  );
+  return <Image image={image} width={width} height={height} crop={crop} />;
 };
 
 function App() {
@@ -50,9 +63,9 @@ function App() {
   const [startLeft, setStartLeft] = useState(0);
   const [startTop, setStartTop] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [rects, setRects] = useState([]);
+  const [rects, setRects] = useState<Array<RectType>>([]);
 
-  const imageRef = useRef(null);
+  const imageRef = useRef<HTMLImageElement>(null);
 
   const { files, onClick, HiddenFileInput } = useFilePicker();
 
@@ -74,7 +87,7 @@ function App() {
   });
 
   useEffect(() => {
-    if (files[0]) {
+    if (files && files[0]) {
       const newImage = files[0];
       const imageURL = URL.createObjectURL(newImage);
       setImageSrc(imageURL);
@@ -188,16 +201,18 @@ function App() {
                     width={rect.width}
                     height={rect.height}
                     onClick={() => {
-                      const canvas = document.querySelector(
+                      const canvas: HTMLCanvasElement | null = document.querySelector(
                         `.cropped-image-${idx + 1} canvas`
                       );
-                      const uri = canvas.toDataURL("image/png");
-                      const link = document.createElement("a");
-                      link.download = `cropped-image-${idx + 1}`;
-                      link.href = uri;
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
+                      if (canvas) {
+                        const uri = canvas.toDataURL("image/png");
+                        const link = document.createElement("a");
+                        link.download = `cropped-image-${idx + 1}`;
+                        link.href = uri;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }
                     }}
                     style={{ margin: "8px" }}
                   >
