@@ -2,6 +2,8 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useFilePicker } from "react-sage";
 import { Stage, Layer, Rect, Image } from "react-konva";
 import useImage from "use-image";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 
 import "./App.css";
 import { IRect } from "konva/types/types";
@@ -71,18 +73,34 @@ function App() {
 
   const { files, onClick, HiddenFileInput } = useFilePicker();
 
-  const downloadImage = (idx: number) => {
-    const canvas: HTMLCanvasElement | null = document.querySelector(
-      `.cropped-image-${idx + 1} canvas`
-    );
-    if (canvas) {
-      const uri = canvas.toDataURL("image/png");
-      const link = document.createElement("a");
-      link.download = `cropped-image-${idx + 1}`;
-      link.href = uri;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+  const zipImagesAndDownload = async () => {
+    const zip = new JSZip();
+    const folder = zip.folder("cropped-images");
+
+    if (folder) {
+      for (let i = 1; i < rects.length + 1; i += 1) {
+        const canvas: HTMLCanvasElement | null = document.querySelector(
+          `.cropped-image-${i} canvas`
+        );
+        if (canvas) {
+          const imageUrl = canvas.toDataURL("image/png");
+
+          // Fetch the image and parse the response stream as a blob
+          const imageBlob = await fetch(imageUrl).then((response) =>
+            response.blob()
+          );
+
+          // create a new file from the blob object
+          // @ts-ignore
+          const imageFile = new File([imageBlob], `cropped-image-${i}.jpg`);
+
+          folder.file(`cropped-image-${i}.jpg`, imageFile);
+        }
+      }
+
+      folder
+        .generateAsync({ type: "blob" })
+        .then((content) => saveAs(content, "cropped-images.zip"));
     }
   };
 
@@ -299,9 +317,7 @@ function App() {
                   type="button"
                   style={{ height: "20%", marginRight: "8px" }}
                   onClick={() => {
-                    for (let i = 0; i < rects.length; i += 1) {
-                      downloadImage(i);
-                    }
+                    zipImagesAndDownload();
                   }}
                 >
                   Download All
