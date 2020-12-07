@@ -64,6 +64,8 @@ function App() {
   const [startTop, setStartTop] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [rects, setRects] = useState<Array<RectType>>([]);
+  const [showDrawer, setShowDrawer] = useState(false);
+  const [maxHeight, setMaxHeight] = useState(200);
 
   const imageRef = useRef<HTMLImageElement>(null);
 
@@ -101,6 +103,18 @@ function App() {
     setWidthRatio(newWidthRatio);
     setHeightRatio(newHeightRatio);
   }, [imageWidth, imageHeight, naturalImageWidth, naturalImageHeight]);
+
+  useEffect(() => {
+    const maxHeight = rects.reduce((acc, val) => {
+      if (val.height > acc) {
+        return val.height + 15;
+      }
+
+      return 200;
+    }, 200);
+
+    setMaxHeight(maxHeight);
+  }, [rects]);
 
   return (
     <div className="App">
@@ -183,70 +197,96 @@ function App() {
             })}
           </Layer>
         </Stage>
+        {rects.map((rect, idx) => (
+          <button
+            type="button"
+            style={{
+              position: "absolute",
+              left: rect.left + imageLeft,
+              top: rect.top + imageTop,
+            }}
+            onClick={() => {
+              const newRects = rects;
+              newRects.splice(idx, 1);
+              setRects(newRects);
+            }}
+          >
+            X
+          </button>
+        ))}
         {rects.length > 0 && (
           <div
             id="result-area"
             style={{
+              position: "absolute",
+              left: 0,
+              top: 0,
               display: "flex",
               flexDirection: "row",
               border: "5px solid white",
               borderRadius: "5px",
+              height: showDrawer ? `${maxHeight}px` : "200px",
+              backgroundColor: "grey",
+              maxWidth: "90%",
             }}
           >
-            {imageSrc !== "" &&
-              rects.map((rect, idx) => (
-                <div>
-                  <Stage
-                    className={`cropped-image-${idx + 1}`}
-                    width={rect.width}
-                    height={rect.height}
-                    onClick={() => {
-                      const canvas: HTMLCanvasElement | null = document.querySelector(
-                        `.cropped-image-${idx + 1} canvas`
-                      );
-                      if (canvas) {
-                        const uri = canvas.toDataURL("image/png");
-                        const link = document.createElement("a");
-                        link.download = `cropped-image-${idx + 1}`;
-                        link.href = uri;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                      }
-                    }}
-                    style={{ margin: "8px" }}
-                  >
-                    <Layer>
-                      <CroppedImage
-                        imgSrc={imageSrc}
-                        width={rect.width}
-                        height={rect.height}
-                        crop={{
-                          x: widthRatio * rect.left,
-                          y: heightRatio * rect.top,
-                          width: widthRatio * rect.width,
-                          height: heightRatio * rect.height,
-                        }}
-                      />
-                    </Layer>
-                  </Stage>
-                  <button
-                    type="button"
-                    style={{
-                      position: "absolute",
-                      left: rect.left + imageLeft,
-                      top: rect.top + imageTop,
-                    }}
-                    onClick={() => {
-                      const newRects = rects;
-                      newRects.splice(idx, 1);
-                      setRects(newRects);
-                    }}
-                  >
-                    X
-                  </button>
-                </div>
-              ))}
+            <div
+              id="image-section"
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                overflow: "scroll",
+              }}
+            >
+              {imageSrc !== "" &&
+                showDrawer &&
+                rects.map((rect, idx) => (
+                  <div>
+                    <Stage
+                      className={`cropped-image-${idx + 1}`}
+                      width={rect.width}
+                      height={rect.height}
+                      onClick={() => {
+                        const canvas: HTMLCanvasElement | null = document.querySelector(
+                          `.cropped-image-${idx + 1} canvas`
+                        );
+                        if (canvas) {
+                          const uri = canvas.toDataURL("image/png");
+                          const link = document.createElement("a");
+                          link.download = `cropped-image-${idx + 1}`;
+                          link.href = uri;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                        }
+                      }}
+                      style={{ margin: "8px" }}
+                    >
+                      <Layer>
+                        <CroppedImage
+                          imgSrc={imageSrc}
+                          width={rect.width}
+                          height={rect.height}
+                          crop={{
+                            x: widthRatio * rect.left,
+                            y: heightRatio * rect.top,
+                            width: widthRatio * rect.width,
+                            height: heightRatio * rect.height,
+                          }}
+                        />
+                      </Layer>
+                    </Stage>
+                  </div>
+                ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setShowDrawer(!showDrawer);
+              }}
+            >
+              {showDrawer ? "<" : ">"}
+            </button>
           </div>
         )}
       </header>
