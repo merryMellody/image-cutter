@@ -71,6 +71,21 @@ function App() {
 
   const { files, onClick, HiddenFileInput } = useFilePicker();
 
+  const downloadImage = (idx: number) => {
+    const canvas: HTMLCanvasElement | null = document.querySelector(
+      `.cropped-image-${idx + 1} canvas`
+    );
+    if (canvas) {
+      const uri = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.download = `cropped-image-${idx + 1}`;
+      link.href = uri;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
   const updateSize = () => {
     if (imageRef.current) {
       setImageHeight(imageRef.current.clientHeight);
@@ -235,6 +250,7 @@ function App() {
               style={{
                 display: "flex",
                 flexDirection: "row",
+                alignItems: "center",
                 overflow: "scroll",
               }}
             >
@@ -278,12 +294,26 @@ function App() {
                     </Stage>
                   </div>
                 ))}
+              {showDrawer && (
+                <button
+                  type="button"
+                  style={{ height: "20%", marginRight: "8px" }}
+                  onClick={() => {
+                    for (let i = 0; i < rects.length; i += 1) {
+                      downloadImage(i);
+                    }
+                  }}
+                >
+                  Download All
+                </button>
+              )}
             </div>
             <button
               type="button"
               onClick={() => {
                 setShowDrawer(!showDrawer);
               }}
+              style={{ height: "100%" }}
             >
               {showDrawer ? "<" : ">"}
             </button>
